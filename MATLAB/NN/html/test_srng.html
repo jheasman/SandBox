@@ -1,0 +1,425 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN">
+<html xmlns:mwsh="http://www.mathworks.com/namespace/mcode/v1/syntaxhighlight.dtd">
+   <head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   
+      <!--
+This HTML is auto-generated from an M-file.
+To make changes, update the M-file and republish this document.
+      -->
+      <title>test_srng</title>
+      <meta name="generator" content="MATLAB 7.5">
+      <meta name="date" content="2009-03-04">
+      <meta name="m-file" content="test_srng"><style>
+
+body {
+  background-color: white;
+  margin:10px;
+}
+
+h1 {
+  color: #990000; 
+  font-size: x-large;
+}
+
+h2 {
+  color: #990000;
+  font-size: medium;
+}
+
+/* Make the text shrink to fit narrow windows, but not stretch too far in 
+wide windows. */ 
+p,h1,h2,div.content div {
+  max-width: 600px;
+  /* Hack for IE6 */
+  width: auto !important; width: 600px;
+}
+
+pre.codeinput {
+  background: #EEEEEE;
+  padding: 10px;
+}
+@media print {
+  pre.codeinput {word-wrap:break-word; width:100%;}
+} 
+
+span.keyword {color: #0000FF}
+span.comment {color: #228B22}
+span.string {color: #A020F0}
+span.untermstring {color: #B20000}
+span.syscmd {color: #B28C00}
+
+pre.codeoutput {
+  color: #666666;
+  padding: 10px;
+}
+
+pre.error {
+  color: red;
+}
+
+p.footer {
+  text-align: right;
+  font-size: xx-small;
+  font-weight: lighter;
+  font-style: italic;
+  color: gray;
+}
+
+  </style></head>
+   <body>
+      <div class="content">
+         <h2>Contents</h2>
+         <div>
+            <ul>
+               <li><a href="#1">First example</a></li>
+               <li><a href="#2">Second example : Roc curve on ionosphere data</a></li>
+            </ul>
+         </div>
+         <h2>First example<a name="1"></a></h2><pre class="codeinput">clear, clc, close <span class="string">all</span> <span class="string">hidden</span>
+disp(<span class="string">'Running example 1 ....'</span>)
+
+d                                     = 2;
+Ntrain                                = 100;
+m                                     = 2;
+M0                                    = [0 ; 0];
+R0                                    = [1 0 ; 0 1];
+M1                                    = [2 ; 3];
+R1                                    = [0.5 0.1 ; 0.2 1];
+vect_test                             = (-4:0.1:8);
+options.epsilonk                      = 0.005;
+options.epsilonl                      = 0.001;
+options.epsilonlambda                 = 10e-8;
+options.sigmastart                    = 2;
+options.sigmaend                      = 10e-4;
+options.sigmastretch                  = 10e-3;
+options.threshold                     = 10e-10;
+options.xi                            = 0.1;
+options.nb_iterations                 = 5000;
+options.metric_method                 = 1;
+options.shuffle                       = 1;
+options.updatelambda                  = 1;
+
+
+
+Xtrain                                = [M0(: , ones(1 , Ntrain/2)) + chol(R0)'*randn(d , Ntrain/2) , M1(: , ones(1 , Ntrain/2)) + chol(R1)'*randn(d , Ntrain/2)];
+ytrain                                = [zeros(1 , Ntrain/2) , ones(1 , Ntrain/2)];
+[X , Y]                               = meshgrid(vect_test);
+Xtest                                 = [X(:)' ; Y(:)'];
+
+Nproto_pclass                         = 4*ones(1 , length(unique(ytrain)));
+
+
+[Wproto , yproto , lambda]            = ini_proto(Xtrain , ytrain , Nproto_pclass);
+[Wproto_est , yproto_est , lambda_est,  E_SRNG]    = srng_model(Xtrain , ytrain , Wproto , yproto , lambda , options);
+ytest_est                             = NN_predict(Xtest , Wproto_est , yproto_est,lambda_est,options);
+
+indtrain0                             = (ytrain == 0);
+indtrain1                             = (ytrain == 1);
+
+indproto0                             = (yproto_est == 0);
+indproto1                             = (yproto_est == 1);
+
+figure(1)
+imagesc(vect_test , vect_test , reshape(ytest_est , length(vect_test) , length(vect_test)) )
+axis <span class="string">ij</span>
+hold <span class="string">on</span>
+plot(Xtrain(1 , indtrain0) , Xtrain(2 , indtrain0) , <span class="string">'k+'</span> , Xtrain(1 , indtrain1) , Xtrain(2 , indtrain1) , <span class="string">'m+'</span> , Wproto_est(1 , indproto0) ,  Wproto_est(2 , indproto0) , <span class="string">'ko'</span> , Wproto_est(1 , indproto1) ,  Wproto_est(2 , indproto1) , <span class="string">'mo'</span>)
+h = voronoi(Wproto_est(1 , :) , Wproto_est(2 , :));
+set(h , <span class="string">'color'</span> , <span class="string">'y'</span> , <span class="string">'linewidth'</span> , 2)
+hold <span class="string">off</span>
+title(<span class="string">'E_{SRNG}(t)'</span> , <span class="string">'fontsize'</span> , 12)
+colorbar
+
+
+figure(2)
+plot(E_SRNG);
+title(<span class="string">'E_{SRNG}(t)'</span> , <span class="string">'fontsize'</span> , 12)
+
+
+figure(3)
+stem(lambda_est);
+title(<span class="string">'\lambda'</span> , <span class="string">'fontsize'</span> , 12)
+
+
+
+pause
+</pre><pre class="codeoutput">Running example 1 ....
+</pre><img vspace="5" hspace="5" src="test_srng_01.png"> <img vspace="5" hspace="5" src="test_srng_02.png"> <img vspace="5" hspace="5" src="test_srng_03.png"> <h2>Second example : Roc curve on ionosphere data<a name="2"></a></h2><pre class="codeinput">disp(<span class="string">'Running example 2 ....'</span>)
+
+clear, close <span class="string">all</span> <span class="string">hidden</span>
+
+load <span class="string">ionosphere</span>
+Nproto_pclass                      = 4*ones(1 , length(unique(y)));
+
+
+options.epsilonk                   = 0.005;
+options.epsilonl                   = 0.001;
+options.epsilonlambda              = 10e-8;
+options.sigmastart                 = 2;
+options.sigmaend                   = 10e-4;
+options.sigmastretch               = 10e-3;
+options.threshold                  = 10e-10;
+options.xi                         = 2;
+options.nb_iterations              = 5000;
+options.metric_method              = 1;
+options.shuffle                    = 1;
+options.updatelambda               = 1;
+
+
+
+options.method                     = 7;
+options.holding.rho                = 0.7;
+options.holding.K                  = 20;
+
+
+X                                  = normalize(X);
+[Itrain , Itest]                   = sampling(X , y , options);
+
+Perftrain                          = zeros(1 , size(Itrain , 1));
+Perftest                           = zeros(1 , size(Itrain , 1));
+tptrain                            = zeros(size(Itrain , 1) , 100);
+fptrain                            = zeros(size(Itrain , 1) , 100);
+tptest                             = zeros(size(Itrain , 1) , 100);
+fptest                             = zeros(size(Itrain , 1) , 100);
+
+<span class="keyword">for</span> i = 1 : size(Itrain , 1)
+
+    [Xtrain , ytrain , Xtest , ytest]  = samplingset(X , y , Itrain , Itest , i);
+
+    [Wproto , yproto , lambda]         = ini_proto(Xtrain , ytrain , Nproto_pclass);
+    [Wproto_est , yproto_est , lambda_est,  E_SRNG]    = srng_model(Xtrain , ytrain , Wproto , yproto , lambda, options);
+
+    [ytest_est , disttest]             = NN_predict(Xtest , Wproto_est , yproto_est , lambda_est , options);
+    [ytrain_est , disttrain]           = NN_predict(Xtrain , Wproto_est , yproto_est , lambda_est , options);
+
+    Perftrain(i)                       = perf_classif(ytrain , ytrain_est);
+    Perftest(i)                        = perf_classif(ytest , ytest_est);
+
+    dktrain                            = min(disttrain(yproto==0 , :));
+    dltrain                            = min(disttrain(yproto~=0 , :));
+    nutrain                            = (dktrain - dltrain)./(dktrain + dltrain);
+    [tptrain(i , :) , fptrain(i , :)]  = basicroc(ytrain , nutrain);
+
+
+    dktest                             = min(disttest(yproto==0 , :));
+    dltest                             = min(disttest(yproto~=0 , :));
+    nutest                             = (dktest - dltest)./(dktest + dltest);
+    [tptest(i , :) , fptest(i , :)]    = basicroc(ytest , nutest);
+
+    disp(sprintf(<span class="string">'%d/%d'</span> , i , options.holding.K))
+    drawnow
+
+<span class="keyword">end</span>
+
+disp(<span class="string">'Performances Train/Test'</span>)
+disp([mean(Perftrain,2) , mean(Perftest,2)])
+
+figure(1)
+plot(E_SRNG);
+title(<span class="string">'E_{SRNG}(t)'</span> , <span class="string">'fontsize'</span> , 12)
+
+figure(2)
+stem(lambda_est);
+title(<span class="string">'\lambda'</span> , <span class="string">'fontsize'</span> , 12)
+
+figure(3)
+plot(mean(fptrain , 1) , mean(tptrain , 1) , mean(fptest , 1) , mean(tptest , 1) , <span class="string">'r'</span> , <span class="string">'linewidth'</span>  , 2)
+axis([-0.02 , 1.02 , -0.02 , 1.02])
+xlabel(<span class="string">'false positive rate'</span>);
+ylabel(<span class="string">'true positive rate'</span>);
+title(<span class="string">'ROC curve'</span>,<span class="string">'fontsize'</span> , 12);
+legend([<span class="string">'Train'</span>] , [<span class="string">'Test'</span>])
+</pre><pre class="codeoutput">Running example 2 ....
+1/20
+2/20
+3/20
+4/20
+5/20
+6/20
+7/20
+8/20
+9/20
+10/20
+11/20
+12/20
+13/20
+14/20
+15/20
+16/20
+17/20
+18/20
+19/20
+20/20
+Performances Train/Test
+    0.9140    0.8976
+
+</pre><img vspace="5" hspace="5" src="test_srng_04.png"> <img vspace="5" hspace="5" src="test_srng_05.png"> <img vspace="5" hspace="5" src="test_srng_06.png"> <p class="footer"><br>
+            Published with MATLAB&reg; 7.5<br></p>
+      </div>
+      <!--
+##### SOURCE BEGIN #####
+%% First example 
+
+clear, clc, close all hidden
+disp('Running example 1 ....')
+
+d                                     = 2;
+Ntrain                                = 100;
+m                                     = 2;
+M0                                    = [0 ; 0];
+R0                                    = [1 0 ; 0 1];
+M1                                    = [2 ; 3];
+R1                                    = [0.5 0.1 ; 0.2 1];
+vect_test                             = (-4:0.1:8);
+options.epsilonk                      = 0.005;
+options.epsilonl                      = 0.001;
+options.epsilonlambda                 = 10e-8;
+options.sigmastart                    = 2;
+options.sigmaend                      = 10e-4;
+options.sigmastretch                  = 10e-3;
+options.threshold                     = 10e-10;
+options.xi                            = 0.1;
+options.nb_iterations                 = 5000;
+options.metric_method                 = 1;
+options.shuffle                       = 1;
+options.updatelambda                  = 1;
+
+
+
+Xtrain                                = [M0(: , ones(1 , Ntrain/2)) + chol(R0)'*randn(d , Ntrain/2) , M1(: , ones(1 , Ntrain/2)) + chol(R1)'*randn(d , Ntrain/2)];
+ytrain                                = [zeros(1 , Ntrain/2) , ones(1 , Ntrain/2)];
+[X , Y]                               = meshgrid(vect_test);
+Xtest                                 = [X(:)' ; Y(:)'];
+
+Nproto_pclass                         = 4*ones(1 , length(unique(ytrain)));
+
+
+[Wproto , yproto , lambda]            = ini_proto(Xtrain , ytrain , Nproto_pclass);
+[Wproto_est , yproto_est , lambda_est,  E_SRNG]    = srng_model(Xtrain , ytrain , Wproto , yproto , lambda , options);
+ytest_est                             = NN_predict(Xtest , Wproto_est , yproto_est,lambda_est,options);
+
+indtrain0                             = (ytrain == 0);
+indtrain1                             = (ytrain == 1);
+
+indproto0                             = (yproto_est == 0);
+indproto1                             = (yproto_est == 1);
+
+figure(1)
+imagesc(vect_test , vect_test , reshape(ytest_est , length(vect_test) , length(vect_test)) )
+axis ij
+hold on
+plot(Xtrain(1 , indtrain0) , Xtrain(2 , indtrain0) , 'k+' , Xtrain(1 , indtrain1) , Xtrain(2 , indtrain1) , 'm+' , Wproto_est(1 , indproto0) ,  Wproto_est(2 , indproto0) , 'ko' , Wproto_est(1 , indproto1) ,  Wproto_est(2 , indproto1) , 'mo')
+h = voronoi(Wproto_est(1 , :) , Wproto_est(2 , :));
+set(h , 'color' , 'y' , 'linewidth' , 2)
+hold off
+title('E_{SRNG}(t)' , 'fontsize' , 12)
+colorbar
+
+
+figure(2)
+plot(E_SRNG);
+title('E_{SRNG}(t)' , 'fontsize' , 12)
+
+
+figure(3)
+stem(lambda_est);
+title('\lambda' , 'fontsize' , 12)
+
+
+
+pause
+
+%% Second example : Roc curve on ionosphere data 
+
+disp('Running example 2 ....')
+
+clear, close all hidden
+
+load ionosphere
+Nproto_pclass                      = 4*ones(1 , length(unique(y)));
+
+
+options.epsilonk                   = 0.005;
+options.epsilonl                   = 0.001;
+options.epsilonlambda              = 10e-8;
+options.sigmastart                 = 2;
+options.sigmaend                   = 10e-4;
+options.sigmastretch               = 10e-3;
+options.threshold                  = 10e-10;
+options.xi                         = 2;
+options.nb_iterations              = 5000;
+options.metric_method              = 1;
+options.shuffle                    = 1;
+options.updatelambda               = 1;
+
+
+
+options.method                     = 7;
+options.holding.rho                = 0.7;
+options.holding.K                  = 20;
+
+
+X                                  = normalize(X);
+[Itrain , Itest]                   = sampling(X , y , options);
+
+Perftrain                          = zeros(1 , size(Itrain , 1));
+Perftest                           = zeros(1 , size(Itrain , 1));
+tptrain                            = zeros(size(Itrain , 1) , 100);
+fptrain                            = zeros(size(Itrain , 1) , 100);
+tptest                             = zeros(size(Itrain , 1) , 100);
+fptest                             = zeros(size(Itrain , 1) , 100);
+
+for i = 1 : size(Itrain , 1)
+
+    [Xtrain , ytrain , Xtest , ytest]  = samplingset(X , y , Itrain , Itest , i);
+
+    [Wproto , yproto , lambda]         = ini_proto(Xtrain , ytrain , Nproto_pclass);
+    [Wproto_est , yproto_est , lambda_est,  E_SRNG]    = srng_model(Xtrain , ytrain , Wproto , yproto , lambda, options);
+
+    [ytest_est , disttest]             = NN_predict(Xtest , Wproto_est , yproto_est , lambda_est , options);
+    [ytrain_est , disttrain]           = NN_predict(Xtrain , Wproto_est , yproto_est , lambda_est , options);
+
+    Perftrain(i)                       = perf_classif(ytrain , ytrain_est);
+    Perftest(i)                        = perf_classif(ytest , ytest_est);
+
+    dktrain                            = min(disttrain(yproto==0 , :));
+    dltrain                            = min(disttrain(yproto~=0 , :));
+    nutrain                            = (dktrain - dltrain)./(dktrain + dltrain);
+    [tptrain(i , :) , fptrain(i , :)]  = basicroc(ytrain , nutrain);
+
+
+    dktest                             = min(disttest(yproto==0 , :));
+    dltest                             = min(disttest(yproto~=0 , :));
+    nutest                             = (dktest - dltest)./(dktest + dltest);
+    [tptest(i , :) , fptest(i , :)]    = basicroc(ytest , nutest);
+
+    disp(sprintf('%d/%d' , i , options.holding.K))
+    drawnow
+
+end
+
+disp('Performances Train/Test')
+disp([mean(Perftrain,2) , mean(Perftest,2)])
+
+figure(1)
+plot(E_SRNG);
+title('E_{SRNG}(t)' , 'fontsize' , 12)
+
+figure(2)
+stem(lambda_est);
+title('\lambda' , 'fontsize' , 12)
+
+figure(3)
+plot(mean(fptrain , 1) , mean(tptrain , 1) , mean(fptest , 1) , mean(tptest , 1) , 'r' , 'linewidth'  , 2)
+axis([-0.02 , 1.02 , -0.02 , 1.02])
+xlabel('false positive rate');
+ylabel('true positive rate');
+title('ROC curve','fontsize' , 12);
+legend(['Train'] , ['Test'])
+##### SOURCE END #####
+-->
+   </body>
+</html>
